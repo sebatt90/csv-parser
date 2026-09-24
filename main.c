@@ -23,6 +23,36 @@ char *read_file(char *path){
   return buf;
 }
 
+// dynamic array implementation
+typedef struct array_t {
+  // data
+  char **data;
+  // metadata
+  size_t size; // size of array
+  size_t len; // used spaces
+  char alpha;
+} CSVArray;
+
+
+#define CSVARRAY_SIZE 16
+
+CSVArray *csvarray_init(){
+  CSVArray *n = (CSVArray *) calloc(1,sizeof(CSVArray));
+  n->data = (char **) calloc(CSVARRAY_SIZE, sizeof(char *));
+  n->size = CSVARRAY_SIZE;
+  n->len = 0;
+  return n;
+}
+
+static void csvarray_insert(CSVArray *arr, char *data){
+  if(arr->size == arr->len) {
+    arr->size *= 2;    
+    arr->data = (char **) realloc(arr->data, arr->size*sizeof(char *));
+  }
+  arr->data[arr->len] = data;
+  arr->len++;
+}
+
 // list implementation
 typedef struct list_t {
   char *entry;
@@ -52,10 +82,9 @@ MyList *list_destroy(MyList *h){
   }
 }
 
-MyList *csv_list(char *csv) {
-  MyList *p = list_insert_prev(NULL, csv);
-  MyList *h = p;
-  h->next = NULL;
+CSVArray *csv_list(char *csv) {
+  CSVArray *arr = csvarray_init();
+  csvarray_insert(arr, csv);
   
   bool flag = false;
 
@@ -68,12 +97,12 @@ MyList *csv_list(char *csv) {
     }
     
     if(flag == true) {
-      p = list_insert_prev(p, (char *) csv+i);
+      csvarray_insert(arr, csv+i);
       flag = false;
     }
   }
 
-  return h;
+  return arr;
 }
 
 int main(int argc, char **argv) {
@@ -81,10 +110,10 @@ int main(int argc, char **argv) {
 
   char *csv = read_file(argv[1]);
 
-  MyList *h = csv_list(csv);
-  
-  list_destroy(h);
+  CSVArray *csvarr = csv_list(csv);
   
   free(csv);
+  free(csvarr->data);
+  free(csvarr);
   return 0;
 }
